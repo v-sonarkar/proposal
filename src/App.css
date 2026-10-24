@@ -38,10 +38,12 @@ body {
 
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 76px 16px 40px;
+  padding: calc(76px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    calc(40px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   color: var(--ink);
   background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
   background-attachment: fixed;
@@ -126,11 +128,11 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 52px;
+  height: calc(52px + env(safe-area-inset-top));
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 14px;
+  padding: env(safe-area-inset-top) max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
   background: #1e1e1e;
   color: #eee;
   font-size: 0.85rem;
@@ -355,7 +357,7 @@ body {
 /* ---------- Palette picker ---------- */
 .palette-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -375,8 +377,10 @@ body {
   transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
-.palette-card:hover {
-  transform: translateY(-3px);
+@media (hover: hover) {
+  .palette-card:hover {
+    transform: translateY(-3px);
+  }
 }
 
 .palette-card.picked {
@@ -443,8 +447,10 @@ body {
   z-index: 2;
 }
 
-.btn-yes:hover {
-  filter: brightness(1.08);
+@media (hover: hover) {
+  .btn-yes:hover {
+    filter: brightness(1.08);
+  }
 }
 
 .btn-no,
@@ -564,7 +570,8 @@ body {
 .artboard {
   position: relative;
   width: 100%;
-  height: 340px;
+  height: clamp(260px, 42vh, 380px);
+  margin-top: 20px;
   background: #fff;
   border-radius: 4px;
   outline: 2px solid #1e88e5;
@@ -837,7 +844,7 @@ body {
 
 .sketch-canvas {
   width: 100%;
-  height: 320px;
+  height: clamp(240px, 45vh, 440px);
   border-radius: 12px;
   background: #fff;
   touch-action: none;
@@ -848,7 +855,7 @@ body {
 /* ---------- Date planner ---------- */
 .date-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
   gap: 12px;
   width: 100%;
 }
@@ -869,8 +876,10 @@ body {
   transition: transform 0.2s, background 0.2s, border-color 0.2s;
 }
 
-.date-chip:hover {
-  transform: translateY(-3px);
+@media (hover: hover) {
+  .date-chip:hover {
+    transform: translateY(-3px);
+  }
 }
 
 .date-chip.picked {
@@ -1019,4 +1028,280 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.9; }
+}
+
+/* =====================================================
+   Responsive layout
+   phones < 600px · tablets 600–1023px · laptops / MacBook 1024–1439px · large desktop ≥ 1440px
+   ===================================================== */
+
+.celebrate-grid {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Phones */
+@media (max-width: 599px) {
+  .screen {
+    gap: 14px;
+  }
+
+  .card {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  .btn {
+    font-size: 1rem;
+    padding: 11px 22px;
+  }
+
+  .buttons {
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .letter-line {
+    font-size: 1.15rem;
+  }
+
+  .letter-line.greeting {
+    font-size: 1.7rem;
+  }
+
+  .letter-card {
+    min-height: 240px;
+  }
+
+  .font-chip {
+    min-width: 64px;
+    padding: 6px 8px;
+    font-size: 1.25rem;
+  }
+
+  .score-bar {
+    width: 110px;
+  }
+
+  .flip-card {
+    height: 120px;
+  }
+
+  .flip-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .flip-front {
+    font-size: 2.4rem;
+  }
+
+  .flip-back {
+    font-size: 0.82rem;
+  }
+
+  .tag {
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+  }
+
+  .toolbar {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .color-dot {
+    width: 24px;
+    height: 24px;
+  }
+
+  .tool {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mp-label {
+    font-size: 0.68rem;
+  }
+}
+
+/* Very small phones (iPhone SE / 320px) */
+@media (max-width: 360px) {
+  .envelope {
+    scale: 0.88;
+  }
+
+  .title {
+    font-size: 1.9rem;
+  }
+
+  .topbar .dots {
+    gap: 3px;
+  }
+
+  .topbar .dot {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+/* Tablets (iPad portrait / landscape) */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .screen {
+    max-width: 720px;
+  }
+
+  .screen.wide {
+    max-width: 760px;
+  }
+
+  .palette-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .date-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .flip-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Laptops / MacBook and up */
+@media (min-width: 1024px) {
+  .screen {
+    max-width: 760px;
+    gap: 22px;
+  }
+
+  .screen.wide {
+    max-width: 1100px;
+  }
+
+  .palette-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .date-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .celebrate-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+
+  .poster-card {
+    position: sticky;
+    top: 80px;
+  }
+
+  .flip-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .envelope {
+    scale: 1.15;
+    margin: 36px 0;
+  }
+
+  .meter {
+    width: 100px;
+    height: 260px;
+  }
+
+  .hold-heart {
+    font-size: 5.5rem;
+  }
+}
+
+/* Large desktop monitors */
+@media (min-width: 1440px) {
+  html {
+    font-size: 17px;
+  }
+
+  .screen {
+    max-width: 860px;
+  }
+
+  .screen.wide {
+    max-width: 1240px;
+  }
+
+  .title {
+    font-size: 4rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 19px;
+  }
+}
+
+/* Short screens: phones in landscape, small MacBook Air windows */
+@media (max-height: 720px) {
+  .app {
+    align-items: flex-start;
+  }
+
+  .big-emoji {
+    font-size: 3.5rem;
+  }
+
+  .meter {
+    height: 170px;
+    width: 76px;
+  }
+
+  .hold-heart {
+    font-size: 3.8rem;
+  }
+
+  .envelope {
+    margin: 8px 0;
+  }
+
+  .buttons {
+    min-height: 90px;
+    margin-top: 14px;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .title {
+    font-size: 1.9rem;
+  }
+
+  .screen {
+    gap: 10px;
+  }
+
+  .meter {
+    height: 120px;
+  }
+
+  .letter-card {
+    min-height: 0;
+  }
+}
+
+/* Respect reduced-motion settings */
+@media (prefers-reduced-motion: reduce) {
+  .float-heart,
+  .envelope,
+  .bounce,
+  .heartbeat,
+  .hint {
+    animation: none !important;
+  }
 }

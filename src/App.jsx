@@ -472,38 +472,70 @@ function LayoutPuzzle({ onDone }) {
   const [target, setTarget] = useState(null);
   const [dragging, setDragging] = useState(null);
 
+  // Slot positions depend on the artboard size, so recompute them on resize / rotation
   useLayoutEffect(() => {
     const box = boxRef.current;
-    const w = box.clientWidth;
-    const h = box.clientHeight;
-    const letters = PUZZLE_WORD.filter((c) => c !== " ").length;
-    const spaces = PUZZLE_WORD.length - letters;
-    const gap = 6;
-    const s = Math.min(52, Math.floor((w - 16 - gap * (letters - 1)) / (letters + spaces * 0.5)));
-    const total = s * letters + gap * (letters - 1) + s * 0.5 * spaces;
-    let x = (w - total) / 2;
-    const newSlots = [];
-    PUZZLE_WORD.forEach((ch, i) => {
-      if (ch === " ") {
-        x += s * 0.5;
-        return;
-      }
-      newSlots.push({ id: i, letter: ch, x, y: 24 });
-      x += s + gap;
+    const computeLayout = () => {
+      const w = box.clientWidth;
+      const letters = PUZZLE_WORD.filter((c) => c !== " ").length;
+      const spaces = PUZZLE_WORD.length - letters;
+      const gap = w < 400 ? 4 : 6;
+      const s = Math.min(64, Math.floor((w - 16 - gap * (letters - 1)) / (letters + spaces * 0.5)));
+      const total = s * letters + gap * (letters - 1) + s * 0.5 * spaces;
+      let x = (w - total) / 2;
+      const newSlots = [];
+      PUZZLE_WORD.forEach((ch, i) => {
+        if (ch === " ") {
+          x += s * 0.5;
+          return;
+        }
+        newSlots.push({ id: i, letter: ch, x, y: 24 });
+        x += s + gap;
+      });
+      return { w, h: box.clientHeight, s, slots: newSlots };
+    };
+
+    const first = computeLayout();
+    let prev = first;
+    setSize(first.s);
+    setSlots(first.slots);
+    setPieces(
+      first.slots
+        .map((sl) => ({
+          id: sl.id,
+          letter: sl.letter,
+          x: Math.random() * (first.w - first.s),
+          y: 24 + first.s + 40 + Math.random() * Math.max(first.h - first.s * 2 - 80, 10),
+          rot: Math.random() * 40 - 20,
+          slot: null,
+        }))
+        .sort(() => Math.random() - 0.5)
+    );
+
+    const ro = new ResizeObserver(() => {
+      const next = computeLayout();
+      if (next.w === prev.w && next.h === prev.h) return;
+      const sx = next.w / prev.w;
+      const sy = next.h / prev.h;
+      setSize(next.s);
+      setSlots(next.slots);
+      setPieces((ps) =>
+        ps.map((p) => {
+          if (p.slot !== null) {
+            const sl = next.slots.find((s) => s.id === p.slot);
+            return { ...p, x: sl.x, y: sl.y };
+          }
+          return {
+            ...p,
+            x: Math.min(Math.max(p.x * sx, 0), next.w - next.s),
+            y: Math.min(Math.max(p.y * sy, 0), next.h - next.s),
+          };
+        })
+      );
+      prev = next;
     });
-    const newPieces = newSlots
-      .map((sl) => ({
-        id: sl.id,
-        letter: sl.letter,
-        x: Math.random() * (w - s),
-        y: 24 + s + 40 + Math.random() * (h - s * 2 - 80),
-        rot: Math.random() * 40 - 20,
-        slot: null,
-      }))
-      .sort(() => Math.random() - 0.5);
-    setSize(s);
-    setSlots(newSlots);
-    setPieces(newPieces);
+    ro.observe(box);
+    return () => ro.disconnect();
   }, []);
 
   const solved = pieces.length > 0 && pieces.every((p) => p.slot !== null);
@@ -778,17 +810,37 @@ function Sketch({ palette, onDone }) {
     ctx.restore();
   };
 
+  // Size the canvas to its CSS box (crisp on retina), and keep the drawing when the screen resizes / rotates
   useEffect(() => {
     const c = canvasRef.current;
-    const dpr = window.devicePixelRatio || 1;
-    const r = c.getBoundingClientRect();
-    c.width = r.width * dpr;
-    c.height = r.height * dpr;
-    const ctx = c.getContext("2d");
-    ctx.scale(dpr, dpr);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    fillWhite();
+    const fit = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const r = c.getBoundingClientRect();
+      const w = Math.round(r.width * dpr);
+      const h = Math.round(r.height * dpr);
+      if (w === c.width && h === c.height) return;
+      let snapshot = null;
+      if (c.width && c.height) {
+        snapshot = document.createElement("canvas");
+        snapshot.width = c.width;
+        snapshot.height = c.height;
+        snapshot.getContext("2d").drawImage(c, 0, 0);
+      }
+      c.width = w;
+      c.height = h;
+      fillWhite();
+      const ctx = c.getContext("2d");
+      if (snapshot) ctx.drawImage(snapshot, 0, 0, w, h);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    };
+    c.width = 0;
+    c.height = 0;
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(c);
+    return () => ro.disconnect();
   }, []);
 
   const pos = (e) => {
@@ -894,7 +946,19 @@ function Question({ onDone }) {
   const [noPos, setNoPos] = useState(null);
   const noRef = useRef(null);
 
-  const yesScale = Math.min(1 + noCount * 0.22, 5);
+  const [vw, setVw] = useState(window.innerWidth);
+  useEffect(() => {
+    const onResize = () => {
+      setVw(window.innerWidth);
+      setNoPos(null); // put the No button back so it can't get stuck off-screen
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Don't let the Yes button grow wider than the screen on phones
+  const maxYes = vw < 480 ? 2.4 : vw < 900 ? 3.5 : 5;
+  const yesScale = Math.min(1 + noCount * 0.22, maxYes);
   const noScale = Math.max(1 - noCount * 0.05, 0.5);
   const face = noCount === 0 ? "🥰" : NO_FACES[(noCount - 1) % NO_FACES.length];
 
@@ -943,7 +1007,7 @@ function Question({ onDone }) {
             transform: `scale(${noScale})`,
             ...(noPos ? { position: "fixed", left: noPos.left, top: noPos.top } : {}),
           }}
-          onMouseEnter={dodge}
+          onPointerEnter={(e) => e.pointerType === "mouse" && dodge()}
           onClick={dodge}
         >
           {NO_TEXTS[Math.min(noCount, NO_TEXTS.length - 1)]}
@@ -1132,7 +1196,7 @@ function Celebration({ noCount, dates, palette, font, sketch, onReplay }) {
   }, [palette, font, sketch, dates]);
 
   return (
-    <div className="screen fade-in">
+    <div className="screen wide fade-in">
       <Burst />
       <div className="big-emoji heartbeat">💖</div>
       <h1 className="title">
@@ -1143,7 +1207,8 @@ function Celebration({ noCount, dates, palette, font, sketch, onReplay }) {
         {noCount > 0 && ` (Even after pressing "No" ${noCount} time${noCount > 1 ? "s" : ""} 😜)`}
       </p>
 
-      <div className="card">
+      <div className="celebrate-grid">
+      <div className="card poster-card">
         <h2 className="card-title">Our poster 🖼️</h2>
         <p className="hint">Designed with your palette, your font and your artwork</p>
         {poster ? (
@@ -1158,6 +1223,7 @@ function Celebration({ noCount, dates, palette, font, sketch, onReplay }) {
         )}
       </div>
 
+      <div className="side-stack">
       <div className="card">
         <h2 className="card-title">Why I love you</h2>
         <p className="hint">Tap each card to flip it</p>
@@ -1184,6 +1250,8 @@ function Celebration({ noCount, dates, palette, font, sketch, onReplay }) {
             ? "Tap to hug me!"
             : `${hugs} hug${hugs > 1 ? "s" : ""} received${hugs >= 10 ? " — I feel so loved 🥹" : ""}`}
         </p>
+      </div>
+      </div>
       </div>
 
       <p className="signature">Forever yours, {YOUR_NAME} 💌</p>
