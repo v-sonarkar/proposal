@@ -4,23 +4,61 @@
   padding: 0;
 }
 
+/* Hide the scrollbar everywhere (page can still scroll) */
+html,
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   font-family: "Poppins", sans-serif;
-  background: linear-gradient(135deg, #ffdde1 0%, #ee9ca7 50%, #ffc3d0 100%);
+  background: #ffdde1;
   min-height: 100vh;
   overflow-x: hidden;
-  color: #5a1a2b;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .app {
+  --bg1: #ffdde1;
+  --bg2: #ffc3d0;
+  --primary: #e91e63;
+  --accent: #ff80ab;
+  --ink: #5a1a2b;
+  --soft: #ffe4ec;
+  --card: rgba(255, 255, 255, 0.88);
+  --display: "Dancing Script";
+
   position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 64px 16px 32px;
+  padding: 76px 16px 40px;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%);
+  background-attachment: fixed;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+/* faint design-grid on the canvas */
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  z-index: 0;
 }
 
 .screen {
@@ -31,39 +69,160 @@ body {
   align-items: center;
   gap: 18px;
   text-align: center;
-  max-width: 640px;
+  max-width: 680px;
   width: 100%;
 }
 
+.tag {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--card);
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px dashed var(--accent);
+}
+
 .title {
-  font-family: "Dancing Script", cursive;
-  font-size: clamp(2.2rem, 7vw, 3.8rem);
-  color: #c2185b;
-  text-shadow: 2px 2px 0 #fff;
+  font-family: var(--display), cursive;
+  font-size: clamp(2.1rem, 7vw, 3.6rem);
+  color: var(--primary);
   line-height: 1.15;
+  transition: color 0.4s;
 }
 
 .subtitle {
-  font-size: clamp(1rem, 3.5vw, 1.25rem);
-  color: #7a2140;
+  font-size: clamp(0.98rem, 3.4vw, 1.2rem);
+  color: var(--ink);
+  opacity: 0.9;
 }
 
 .hint {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   opacity: 0.7;
   animation: pulse 1.6s infinite;
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card);
   backdrop-filter: blur(6px);
   border-radius: 24px;
-  padding: 32px 28px;
-  box-shadow: 0 20px 50px rgba(194, 24, 91, 0.25);
+  padding: 28px 24px;
+  box-shadow: 0 20px 50px color-mix(in srgb, var(--primary) 22%, transparent);
   width: 100%;
 }
 
-/* Floating hearts background */
+.row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- Top bar (design-tool style) ---------- */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  background: #1e1e1e;
+  color: #eee;
+  font-size: 0.85rem;
+  z-index: 30;
+}
+
+.topbar .file {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.topbar .logo {
+  color: var(--accent);
+}
+
+.topbar .dots {
+  display: flex;
+  gap: 5px;
+  margin: 0 auto;
+}
+
+.topbar .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #555;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.topbar .dot.on {
+  background: var(--accent);
+  transform: scale(1.15);
+}
+
+.topbar .frame {
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.sound-btn {
+  border: none;
+  background: #333;
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+@media (max-width: 560px) {
+  .topbar .file,
+  .topbar .frame {
+    display: none;
+  }
+}
+
+/* ---------- Multiplayer cursors ---------- */
+.cursor-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  overflow: hidden;
+}
+
+.mp-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.mp-cursor.lucky {
+  transition: transform 2.2s cubic-bezier(0.45, 0, 0.25, 1);
+}
+
+.mp-cursor.me .mp-label {
+  margin: 18px 0 0 14px;
+}
+
+.mp-label {
+  margin: 16px 0 0 2px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px 10px 10px 10px;
+  white-space: nowrap;
+}
+
+/* ---------- Floating hearts background ---------- */
 .hearts-bg {
   position: fixed;
   inset: 0;
@@ -85,12 +244,32 @@ body {
   100% { transform: translateY(-115vh) rotate(360deg); opacity: 0; }
 }
 
-/* Envelope */
+/* ---------- Tap hearts ---------- */
+.tap-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.tap-heart {
+  position: absolute;
+  font-size: 1.3rem;
+  transform: translate(-50%, -50%);
+  animation: tapFly 0.9s ease-out forwards;
+}
+
+@keyframes tapFly {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); opacity: 0; }
+}
+
+/* ---------- Envelope ---------- */
 .envelope {
   position: relative;
   width: 260px;
   height: 170px;
-  background: #e75480;
+  background: var(--primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -104,8 +283,8 @@ body {
   inset: 0;
   border-radius: 6px;
   background:
-    linear-gradient(to top right, #f06292 50%, transparent 50.5%) left / 50% 100% no-repeat,
-    linear-gradient(to top left, #ec407a 50%, transparent 50.5%) right / 50% 100% no-repeat;
+    linear-gradient(to top right, var(--accent) 50%, transparent 50.5%) left / 50% 100% no-repeat,
+    linear-gradient(to top left, color-mix(in srgb, var(--accent) 80%, var(--primary)) 50%, transparent 50.5%) right / 50% 100% no-repeat;
   z-index: 3;
 }
 
@@ -117,7 +296,7 @@ body {
   height: 0;
   border-left: 130px solid transparent;
   border-right: 130px solid transparent;
-  border-top: 95px solid #d81b60;
+  border-top: 95px solid color-mix(in srgb, var(--primary) 85%, #000);
   transform-origin: top;
   transition: transform 0.5s ease;
   z-index: 4;
@@ -140,6 +319,16 @@ body {
   transition: transform 0.6s ease 0.3s;
 }
 
+.envelope .seal {
+  position: absolute;
+  left: 50%;
+  top: 78px;
+  transform: translate(-50%, -50%);
+  font-size: 1.8rem;
+  z-index: 5;
+  transition: opacity 0.3s;
+}
+
 .envelope.opening {
   animation: none;
 }
@@ -153,39 +342,76 @@ body {
   transform: translateY(-90px);
 }
 
+.envelope.opening .seal {
+  opacity: 0;
+}
+
 @keyframes wiggle {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-3deg); }
   75% { transform: rotate(3deg); }
 }
 
-/* Letter */
-.letter-card {
+/* ---------- Palette picker ---------- */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.palette-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-height: 260px;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: var(--card);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
   text-align: left;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
-.letter-line {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  animation: fadeUp 0.7s ease both;
+.palette-card:hover {
+  transform: translateY(-3px);
 }
 
-.letter-line.greeting {
-  font-family: "Dancing Script", cursive;
-  font-size: 2rem;
-  color: #c2185b;
+.palette-card.picked {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
-.letter-card .btn {
-  align-self: center;
-  margin-top: 10px;
+.swatches {
+  display: flex;
+  height: 54px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-/* Buttons */
+.swatches span {
+  flex: 1;
+  transition: flex 0.3s;
+}
+
+.palette-card:hover .swatches span:hover {
+  flex: 2.2;
+}
+
+.palette-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.hex {
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+/* ---------- Buttons ---------- */
 .buttons {
   display: flex;
   gap: 24px;
@@ -198,37 +424,47 @@ body {
 
 .btn {
   font-family: inherit;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  padding: 12px 30px;
+  padding: 12px 28px;
   border: none;
   border-radius: 999px;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.2s;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.2s, opacity 0.2s;
   white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .btn-yes {
-  background: linear-gradient(135deg, #ff4081, #e91e63);
+  background: linear-gradient(135deg, var(--accent), var(--primary));
   color: #fff;
-  box-shadow: 0 8px 20px rgba(233, 30, 99, 0.4);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 40%, transparent);
   z-index: 2;
 }
 
 .btn-yes:hover {
-  box-shadow: 0 10px 28px rgba(233, 30, 99, 0.6);
   filter: brightness(1.08);
 }
 
-.btn-no {
-  background: #fff;
-  color: #c2185b;
-  border: 2px solid #f48fb1;
+.btn-no,
+.btn-ghost {
+  background: var(--card);
+  color: var(--primary);
+  border: 2px solid var(--accent);
   z-index: 5;
-  transition: left 0.2s ease, top 0.2s ease;
 }
 
-/* Emoji */
+.btn-no {
+  transition: left 0.2s ease, top 0.2s ease, transform 0.25s ease;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- Emoji ---------- */
 .big-emoji {
   font-size: clamp(4rem, 15vw, 6.5rem);
 }
@@ -253,154 +489,7 @@ body {
   45% { transform: scale(1.2); }
 }
 
-/* Celebration */
-.reasons h2 {
-  font-family: "Dancing Script", cursive;
-  font-size: 2rem;
-  color: #c2185b;
-  margin-bottom: 14px;
-}
-
-.reasons ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.reasons li {
-  background: #ffe4ec;
-  border-radius: 12px;
-  padding: 10px 14px;
-  animation: fadeUp 0.6s ease both;
-}
-
-.signature {
-  margin-top: 18px;
-  font-family: "Dancing Script", cursive;
-  font-size: 1.6rem;
-  color: #ad1457;
-}
-
-.burst {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.burst-piece {
-  position: absolute;
-  font-size: 1.6rem;
-  animation: burst 1.6s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
-}
-
-@keyframes burst {
-  0% { transform: translate(0, 0) scale(0.3) rotate(0); opacity: 1; }
-  100% { transform: translate(var(--x), var(--y)) scale(1) rotate(var(--r)); opacity: 0; }
-}
-
-/* Generic animations */
-.fade-in {
-  animation: fadeUp 0.8s ease both;
-}
-
-.pop-in {
-  animation: pop 0.5s ease both;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pop {
-  0% { transform: scale(0); }
-  70% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.9; }
-}
-
-/* ---------- Interactive additions ---------- */
-
-/* Progress hearts + sound toggle */
-.progress {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.6);
-  padding: 6px 12px;
-  border-radius: 999px;
-}
-
-.progress .dot {
-  font-size: 0.95rem;
-  transition: transform 0.3s;
-}
-
-.progress .dot.on {
-  animation: pop 0.4s ease both;
-}
-
-.sound-btn {
-  position: fixed;
-  top: 12px;
-  right: 14px;
-  z-index: 20;
-  border: none;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-/* Tap hearts */
-.tap-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 50;
-}
-
-.tap-heart {
-  position: absolute;
-  font-size: 1.3rem;
-  transform: translate(-50%, -50%);
-  animation: tapFly 0.9s ease-out forwards;
-}
-
-@keyframes tapFly {
-  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
-  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); opacity: 0; }
-}
-
-/* Envelope seal */
-.envelope .seal {
-  position: absolute;
-  left: 50%;
-  top: 78px;
-  transform: translate(-50%, -50%);
-  font-size: 1.8rem;
-  z-index: 5;
-  transition: opacity 0.3s;
-}
-
-.envelope.opening .seal {
-  opacity: 0;
-}
-
-/* Catch game */
+/* ---------- Catch game ---------- */
 .drop-layer {
   position: fixed;
   inset: 0;
@@ -422,10 +511,6 @@ body {
   touch-action: manipulation;
 }
 
-.drop:hover {
-  filter: drop-shadow(0 0 8px #fff);
-}
-
 @keyframes fall {
   0% { transform: translateY(0) rotate(-15deg); }
   50% { transform: translateY(55vh) rotate(15deg); }
@@ -436,7 +521,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card);
   border-radius: 999px;
   padding: 8px 18px;
   font-weight: 600;
@@ -446,14 +531,14 @@ body {
 .score-bar {
   width: 160px;
   height: 12px;
-  background: #ffe4ec;
+  background: var(--soft);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .score-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff80ab, #e91e63);
+  background: linear-gradient(90deg, var(--accent), var(--primary));
   transition: width 0.3s ease;
 }
 
@@ -475,9 +560,158 @@ body {
   z-index: 6;
 }
 
-/* Letter */
-.letter-card {
+/* ---------- Layout puzzle ---------- */
+.artboard {
+  position: relative;
+  width: 100%;
+  height: 340px;
+  background: #fff;
+  border-radius: 4px;
+  outline: 2px solid #1e88e5;
+  outline-offset: 0;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  touch-action: none;
+  color: #222;
+}
+
+.artboard.solved {
+  outline-color: var(--primary);
+}
+
+.artboard-label {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e88e5;
+}
+
+.slot {
+  position: absolute;
+  border: 2px dashed #c8c8c8;
+  border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.slot.target {
+  border-color: #ff4081;
+  background: rgba(255, 64, 129, 0.08);
+}
+
+.guide {
+  position: absolute;
+  background: #ff4081;
+  pointer-events: none;
+}
+
+.guide-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.guide-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display), cursive;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+  border-radius: 10px;
+  cursor: grab;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+  touch-action: none;
+}
+
+.piece.dragging {
+  cursor: grabbing;
+  transition: none;
+  z-index: 10;
+  outline: 2px solid #1e88e5;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+}
+
+.piece.placed {
+  box-shadow: none;
+}
+
+.solved-heart {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  transform: translate(-50%, -50%);
+  font-size: 5rem;
+}
+
+/* ---------- Letter + typefaces ---------- */
+.font-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.font-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 82px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.5rem;
   cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.font-chip small {
+  font-family: "Poppins", sans-serif;
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.font-chip.picked {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.letter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 280px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.letter-line {
+  font-size: 1.35rem;
+  line-height: 1.5;
+  animation: fadeUp 0.7s ease both;
+}
+
+.letter-line.greeting {
+  font-size: 2rem;
+  color: var(--primary);
+}
+
+.letter-card .btn {
+  align-self: center;
+  margin-top: 10px;
 }
 
 .tap-more {
@@ -485,16 +719,16 @@ body {
   text-align: center;
 }
 
-/* Love meter */
+/* ---------- Love meter ---------- */
 .meter {
   position: relative;
   width: 90px;
   height: 220px;
   border-radius: 45px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card);
   border: 4px solid #fff;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(194, 24, 91, 0.25);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 .meter-fill {
@@ -502,7 +736,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(0deg, #e91e63, #ff80ab);
+  background: linear-gradient(0deg, var(--primary), var(--accent));
   transition: height 0.05s linear;
 }
 
@@ -514,8 +748,7 @@ body {
   justify-content: center;
   font-weight: 700;
   font-size: 1.4rem;
-  color: #5a1a2b;
-  mix-blend-mode: multiply;
+  color: var(--ink);
 }
 
 .meter-label {
@@ -536,10 +769,83 @@ body {
 .hold-heart.holding {
   animation: none;
   transform: scale(1.35);
-  filter: drop-shadow(0 0 18px #ff4081);
+  filter: drop-shadow(0 0 18px var(--primary));
 }
 
-/* Date planner */
+/* ---------- Sketch ---------- */
+.sketch-wrap {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #1e1e1e;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.color-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.color-dot.picked {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.tool {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.tool.picked {
+  background: var(--primary);
+}
+
+.brush-dot {
+  display: block;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.sep {
+  width: 1px;
+  height: 22px;
+  background: #555;
+}
+
+.sketch-canvas {
+  width: 100%;
+  height: 320px;
+  border-radius: 12px;
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+  border: 1px solid #eee;
+}
+
+/* ---------- Date planner ---------- */
 .date-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -555,10 +861,10 @@ body {
   padding: 16px 10px;
   border-radius: 18px;
   border: 2px solid transparent;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card);
   font-family: inherit;
   font-size: 0.95rem;
-  color: #5a1a2b;
+  color: var(--ink);
   cursor: pointer;
   transition: transform 0.2s, background 0.2s, border-color 0.2s;
 }
@@ -568,7 +874,7 @@ body {
 }
 
 .date-chip.picked {
-  background: #ff4081;
+  background: var(--primary);
   color: #fff;
   border-color: #fff;
   transform: scale(1.05);
@@ -578,31 +884,25 @@ body {
   font-size: 2rem;
 }
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Celebration */
+/* ---------- Celebration ---------- */
 .card-title {
-  font-family: "Dancing Script", cursive;
+  font-family: var(--display), cursive;
   font-size: 2rem;
-  color: #c2185b;
-  margin-bottom: 10px;
+  color: var(--primary);
+  margin-bottom: 8px;
 }
 
-.plan-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
+.poster {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin: 14px auto;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
 }
 
-.plan-pill {
-  background: #ffe4ec;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 600;
+.download {
+  margin-top: 4px;
 }
 
 .flip-grid {
@@ -646,17 +946,17 @@ body {
 }
 
 .flip-front {
-  background: linear-gradient(135deg, #ff80ab, #e91e63);
+  background: linear-gradient(135deg, var(--accent), var(--primary));
   font-size: 3rem;
 }
 
 .flip-back {
   background: #fff;
-  color: #ad1457;
+  color: var(--primary);
   font-weight: 600;
   font-size: 0.95rem;
   transform: rotateY(180deg);
-  border: 2px solid #f8bbd0;
+  border: 2px solid var(--accent);
 }
 
 .hug-btn {
@@ -669,4 +969,54 @@ body {
 
 .hug-btn:active {
   transform: scale(1.3);
+}
+
+.signature {
+  font-family: var(--display), cursive;
+  font-size: 1.7rem;
+  color: var(--primary);
+}
+
+.burst {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.burst-piece {
+  position: absolute;
+  font-size: 1.6rem;
+  animation: burst 1.6s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+
+@keyframes burst {
+  0% { transform: translate(0, 0) scale(0.3) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--x), var(--y)) scale(1) rotate(var(--r)); opacity: 0; }
+}
+
+/* ---------- Generic animations ---------- */
+.fade-in {
+  animation: fadeUp 0.8s ease both;
+}
+
+.pop-in {
+  animation: pop 0.5s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
 }

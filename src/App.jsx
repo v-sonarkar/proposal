@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // ✏️ Personalise these
 const HER_NAME = "Ishita";
 const HER_FULL_NAME = "Ishita Gupta";
 const YOUR_NAME = "Lucky Sharma";
+const YOUR_FIRST = YOUR_NAME.split(" ")[0];
 
 const NO_TEXTS = [
   "No",
@@ -12,15 +13,14 @@ const NO_TEXTS = [
   "Think again!",
   "Last chance 😢",
   "Surely not?",
-  "You might regret this!",
-  "Give it another thought!",
-  "Are you absolutely certain?",
+  "That's bad UX 😤",
+  "Wrong button, designer!",
+  "Ctrl + Z that please",
   "This could be a mistake!",
   "Have a heart! 💔",
   "Don't be so cold!",
   "Change of heart?",
-  "Wouldn't you reconsider?",
-  "Is that your final answer?",
+  "Is that your final draft?",
   "You're breaking my heart 😭",
 ];
 
@@ -28,32 +28,74 @@ const NO_FACES = ["🥺", "😢", "😭", "💔", "😿", "🙏"];
 
 const LETTER_LINES = [
   `Dear ${HER_FULL_NAME},`,
-  "Every moment with you feels like magic ✨",
-  "You make my bad days better and my good days unforgettable.",
-  "Your smile is my favourite thing in the whole world 😊",
-  "So I built this little place on the internet just to ask you something…",
+  "You see beauty in colours, shapes and details nobody else notices 🎨",
+  "And somehow, you made my whole life look better designed.",
+  "You're my favourite masterpiece — no revisions needed ✨",
+  "So I built this little canvas just to ask you something…",
 ];
 
 const REASONS = [
+  { front: "🎨", back: "You turn ordinary things into art" },
   { front: "💫", back: "Your smile lights up my whole world" },
-  { front: "😂", back: "You laugh at my terrible jokes" },
-  { front: "🏡", back: "With you, everything feels like home" },
+  { front: "✏️", back: "Even your doodles make me smile" },
   { front: "🌙", back: "You're the last thing on my mind every night" },
   { front: "🧸", back: "Your hugs fix everything" },
   { front: "💖", back: "You're the best thing that ever happened to me" },
 ];
 
 const DATE_IDEAS = [
+  { id: "gallery", emoji: "🖼️", label: "Art gallery visit" },
   { id: "dinner", emoji: "🍝", label: "Candlelight dinner" },
+  { id: "pottery", emoji: "🏺", label: "Pottery class" },
+  { id: "cafe", emoji: "☕", label: "Aesthetic café hopping" },
+  { id: "paint", emoji: "🖌️", label: "Paint together" },
   { id: "movie", emoji: "🎬", label: "Movie night" },
   { id: "drive", emoji: "🚗", label: "Long drive" },
-  { id: "icecream", emoji: "🍦", label: "Ice cream date" },
-  { id: "beach", emoji: "🌅", label: "Sunset walk" },
-  { id: "coffee", emoji: "☕", label: "Coffee & talks" },
-  { id: "shopping", emoji: "🛍️", label: "Shopping spree" },
-  { id: "picnic", emoji: "🧺", label: "Picnic in the park" },
+  { id: "sunset", emoji: "🌅", label: "Sunset photo walk" },
 ];
 
+const PALETTES = [
+  {
+    id: "blush",
+    name: "Blush Crush",
+    bg1: "#ffdde1", bg2: "#ffc3d0", primary: "#e91e63", accent: "#ff80ab",
+    ink: "#5a1a2b", soft: "#ffe4ec", card: "rgba(255,255,255,0.88)",
+  },
+  {
+    id: "lavender",
+    name: "Lavender Dream",
+    bg1: "#ece6ff", bg2: "#d4c6ff", primary: "#7c4dff", accent: "#b388ff",
+    ink: "#2e1a5a", soft: "#efe9ff", card: "rgba(255,255,255,0.88)",
+  },
+  {
+    id: "peach",
+    name: "Sunset Peach",
+    bg1: "#ffe5d0", bg2: "#ffb199", primary: "#f4511e", accent: "#ffab91",
+    ink: "#5a2a1a", soft: "#fff0e6", card: "rgba(255,255,255,0.88)",
+  },
+  {
+    id: "matcha",
+    name: "Matcha Latte",
+    bg1: "#e3f6ea", bg2: "#b9e4c9", primary: "#2e7d55", accent: "#81c995",
+    ink: "#173a28", soft: "#eafaf1", card: "rgba(255,255,255,0.88)",
+  },
+  {
+    id: "midnight",
+    name: "Midnight Rose",
+    bg1: "#2b1030", bg2: "#4a1942", primary: "#ff4f8b", accent: "#ff9ec4",
+    ink: "#ffe6ef", soft: "#5c2652", card: "rgba(58,24,56,0.9)",
+  },
+];
+
+const FONTS = [
+  { id: "dancing", family: "Dancing Script", vibe: "Romantic" },
+  { id: "playfair", family: "Playfair Display", vibe: "Editorial" },
+  { id: "pacifico", family: "Pacifico", vibe: "Playful" },
+  { id: "caveat", family: "Caveat", vibe: "Handwritten" },
+  { id: "grotesk", family: "Space Grotesk", vibe: "Modern" },
+];
+
+const PUZZLE_WORD = ["I", " ", "L", "O", "V", "E", " ", "Y", "O", "U"];
 const CATCH_GOAL = 10;
 
 /* ---------------- Sound (Web Audio, no files needed) ---------------- */
@@ -93,7 +135,7 @@ function FloatingHearts({ count = 22 }) {
         size: 14 + Math.random() * 26,
         duration: 6 + Math.random() * 8,
         delay: Math.random() * 10,
-        emoji: ["❤️", "💖", "💕", "💗", "💘", "🌸"][i % 6],
+        emoji: ["❤️", "💖", "🎨", "💗", "✏️", "🌸"][i % 6],
       })),
     [count]
   );
@@ -153,6 +195,68 @@ function TapHearts() {
   );
 }
 
+// Figma-style multiplayer cursors: Ishita's label follows her, Lucky's cursor wanders around
+const LUCKY_COMMENTS = [
+  YOUR_FIRST,
+  `${YOUR_FIRST}: hi cutie 👋`,
+  YOUR_FIRST,
+  `${YOUR_FIRST}: love this colour on you`,
+  YOUR_FIRST,
+  `${YOUR_FIRST}: nice kerning 😏`,
+  YOUR_FIRST,
+  `${YOUR_FIRST}: you're my favourite designer`,
+];
+
+function CursorArrow({ color }) {
+  return (
+    <svg width="18" height="22" viewBox="0 0 18 22" aria-hidden="true">
+      <path d="M1 1 L1 17 L5.5 13 L8.5 20.5 L11.5 19.2 L8.6 12 L15 12 Z" fill={color} stroke="#fff" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function DesignCursors() {
+  const [me, setMe] = useState(null);
+  const [lucky, setLucky] = useState({ x: 120, y: 160 });
+  const [comment, setComment] = useState(0);
+
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    const mv = (e) => setMe({ x: e.clientX, y: e.clientY });
+    window.addEventListener("pointermove", mv);
+    return () => window.removeEventListener("pointermove", mv);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setLucky({
+        x: 20 + Math.random() * Math.max(window.innerWidth - 260, 60),
+        y: 70 + Math.random() * Math.max(window.innerHeight - 140, 60),
+      });
+      setComment((c) => (c + 1) % LUCKY_COMMENTS.length);
+    }, 2600);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="cursor-layer" aria-hidden="true">
+      <div className="mp-cursor lucky" style={{ transform: `translate(${lucky.x}px, ${lucky.y}px)` }}>
+        <CursorArrow color="#1e88e5" />
+        <span className="mp-label" style={{ background: "#1e88e5" }}>
+          {LUCKY_COMMENTS[comment]}
+        </span>
+      </div>
+      {me && (
+        <div className="mp-cursor me" style={{ transform: `translate(${me.x}px, ${me.y}px)` }}>
+          <span className="mp-label" style={{ background: "var(--primary)" }}>
+            {HER_NAME}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Burst() {
   const pieces = useMemo(
     () =>
@@ -164,7 +268,7 @@ function Burst() {
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
           rot: Math.random() * 720 - 360,
-          emoji: ["❤️", "💖", "✨", "🎉", "💕", "🌹"][i % 6],
+          emoji: ["❤️", "💖", "✨", "🎉", "🎨", "🌹"][i % 6],
           delay: Math.random() * 0.3,
         };
       }),
@@ -185,19 +289,28 @@ function Burst() {
   );
 }
 
-function Progress({ step, total }) {
+function TopBar({ step, total, muted, onToggleSound }) {
   return (
-    <div className="progress" aria-label={`Step ${step + 1} of ${total}`}>
-      {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={`dot ${i <= step ? "on" : ""}`}>
-          {i <= step ? "❤️" : "🤍"}
-        </span>
-      ))}
-    </div>
+    <header className="topbar">
+      <span className="file">
+        <span className="logo">◆</span> ishita-x-{YOUR_FIRST.toLowerCase()}.fig
+      </span>
+      <div className="dots" aria-label={`Frame ${step + 1} of ${total}`}>
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={`dot ${i <= step ? "on" : ""}`} />
+        ))}
+      </div>
+      <span className="frame">
+        Frame {step + 1}/{total}
+      </span>
+      <button className="sound-btn" onClick={onToggleSound} aria-label={muted ? "Unmute" : "Mute"}>
+        {muted ? "🔇" : "🔊"}
+      </button>
+    </header>
   );
 }
 
-/* ---------------- Step 1: Envelope ---------------- */
+/* ---------------- Step: Envelope ---------------- */
 function Envelope({ onDone }) {
   const [opening, setOpening] = useState(false);
   const open = () => {
@@ -208,20 +321,61 @@ function Envelope({ onDone }) {
   };
   return (
     <div className="screen fade-in">
+      <p className="tag">NEW DESIGN BRIEF · FROM {YOUR_NAME.toUpperCase()}</p>
       <h1 className="title">Hey {HER_NAME} 💌</h1>
-      <p className="subtitle">{YOUR_NAME} sent you something special…</p>
-      <button className={`envelope ${opening ? "opening" : ""}`} onClick={open} aria-label="Open the letter">
+      <p className="subtitle">A very special client has a project only you can handle…</p>
+      <button className={`envelope ${opening ? "opening" : ""}`} onClick={open} aria-label="Open the brief">
         <div className="flap" />
-        <div className="letter">❤️</div>
+        <div className="letter">🎨</div>
         <div className="pocket" />
         <div className="seal">💗</div>
       </button>
-      <p className="hint">Tap the envelope to open</p>
+      <p className="hint">Tap the envelope to open the brief</p>
     </div>
   );
 }
 
-/* ---------------- Step 2: Catch the hearts game ---------------- */
+/* ---------------- Step: Pick the palette ---------------- */
+function PalettePicker({ palette, onPick, onDone }) {
+  return (
+    <div className="screen fade-in">
+      <p className="tag">TASK 01 · COLOUR THEORY</p>
+      <h1 className="title">You're the designer here 🎨</h1>
+      <p className="subtitle">Pick a palette — this whole website will wear your colours</p>
+      <div className="palette-grid">
+        {PALETTES.map((p) => (
+          <button
+            key={p.id}
+            className={`palette-card ${palette.id === p.id ? "picked" : ""}`}
+            onClick={() => {
+              sfx.pop();
+              onPick(p);
+            }}
+          >
+            <div className="swatches">
+              {[p.bg1, p.bg2, p.accent, p.primary, p.ink].map((c) => (
+                <span key={c} style={{ background: c }} />
+              ))}
+            </div>
+            <span className="palette-name">{p.name}</span>
+            <span className="hex">{p.primary.toUpperCase()}</span>
+          </button>
+        ))}
+      </div>
+      <button
+        className="btn btn-yes"
+        onClick={() => {
+          sfx.win();
+          onDone();
+        }}
+      >
+        Apply theme ✓
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- Step: Catch the hearts game ---------------- */
 function CatchHearts({ onDone }) {
   const [score, setScore] = useState(0);
   const [drops, setDrops] = useState([]);
@@ -271,8 +425,9 @@ function CatchHearts({ onDone }) {
 
   return (
     <div className="screen fade-in">
+      <p className="tag">TASK 02 · WARM UP</p>
       <h1 className="title">Catch my heart, {HER_NAME}! 💘</h1>
-      <p className="subtitle">Tap {CATCH_GOAL} falling hearts to unlock the letter — avoid the 💔</p>
+      <p className="subtitle">Tap {CATCH_GOAL} falling hearts — avoid the 💔</p>
       <div className={`score-card ${shake ? "shake" : ""}`}>
         <div className="score-bar">
           <div className="score-fill" style={{ width: `${Math.min(score / CATCH_GOAL, 1) * 100}%` }} />
@@ -285,7 +440,7 @@ function CatchHearts({ onDone }) {
         <div className="pop-in won-box">
           <p className="subtitle">You caught my heart (you always do) 🥰</p>
           <button className="btn btn-yes" onClick={onDone}>
-            Read the letter 💌
+            Next task →
           </button>
         </div>
       )}
@@ -295,10 +450,7 @@ function CatchHearts({ onDone }) {
             key={d.id}
             className="drop"
             style={{ left: `${d.left}%`, fontSize: d.size, animationDuration: `${d.duration}s` }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              catchDrop(d);
-            }}
+            onPointerDown={() => catchDrop(d)}
             onAnimationEnd={() => setDrops((x) => x.filter((y) => y.id !== d.id))}
             aria-label={d.bad ? "Broken heart" : "Heart"}
           >
@@ -310,8 +462,174 @@ function CatchHearts({ onDone }) {
   );
 }
 
-/* ---------------- Step 3: Letter (tap to reveal) ---------------- */
-function Letter({ onDone }) {
+/* ---------------- Step: Fix the layout (drag & snap puzzle) ---------------- */
+function LayoutPuzzle({ onDone }) {
+  const boxRef = useRef(null);
+  const dragRef = useRef(null);
+  const [size, setSize] = useState(44);
+  const [slots, setSlots] = useState([]);
+  const [pieces, setPieces] = useState([]);
+  const [target, setTarget] = useState(null);
+  const [dragging, setDragging] = useState(null);
+
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    const w = box.clientWidth;
+    const h = box.clientHeight;
+    const letters = PUZZLE_WORD.filter((c) => c !== " ").length;
+    const spaces = PUZZLE_WORD.length - letters;
+    const gap = 6;
+    const s = Math.min(52, Math.floor((w - 16 - gap * (letters - 1)) / (letters + spaces * 0.5)));
+    const total = s * letters + gap * (letters - 1) + s * 0.5 * spaces;
+    let x = (w - total) / 2;
+    const newSlots = [];
+    PUZZLE_WORD.forEach((ch, i) => {
+      if (ch === " ") {
+        x += s * 0.5;
+        return;
+      }
+      newSlots.push({ id: i, letter: ch, x, y: 24 });
+      x += s + gap;
+    });
+    const newPieces = newSlots
+      .map((sl) => ({
+        id: sl.id,
+        letter: sl.letter,
+        x: Math.random() * (w - s),
+        y: 24 + s + 40 + Math.random() * (h - s * 2 - 80),
+        rot: Math.random() * 40 - 20,
+        slot: null,
+      }))
+      .sort(() => Math.random() - 0.5);
+    setSize(s);
+    setSlots(newSlots);
+    setPieces(newPieces);
+  }, []);
+
+  const solved = pieces.length > 0 && pieces.every((p) => p.slot !== null);
+
+  useEffect(() => {
+    if (solved) sfx.win();
+  }, [solved]);
+
+  const findTarget = (piece, x, y) => {
+    let best = null;
+    let bestDist = size * 0.9;
+    for (const sl of slots) {
+      if (sl.letter !== piece.letter) continue;
+      if (pieces.some((p) => p.slot === sl.id && p.id !== piece.id)) continue;
+      const d = Math.hypot(sl.x - x, sl.y - y);
+      if (d < bestDist) {
+        best = sl;
+        bestDist = d;
+      }
+    }
+    return best;
+  };
+
+  const onDown = (e, piece) => {
+    if (solved) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { id: piece.id, ox: e.clientX - piece.x, oy: e.clientY - piece.y };
+    setDragging(piece.id);
+    setPieces((ps) => ps.map((p) => (p.id === piece.id ? { ...p, slot: null, rot: 0 } : p)));
+  };
+
+  const onMove = (e, piece) => {
+    const d = dragRef.current;
+    if (!d || d.id !== piece.id) return;
+    const x = e.clientX - d.ox;
+    const y = e.clientY - d.oy;
+    setPieces((ps) => ps.map((p) => (p.id === piece.id ? { ...p, x, y } : p)));
+    setTarget(findTarget(piece, x, y)?.id ?? null);
+  };
+
+  const onUp = (piece) => {
+    const d = dragRef.current;
+    if (!d || d.id !== piece.id) return;
+    dragRef.current = null;
+    setDragging(null);
+    const sl = slots.find((s) => s.id === target);
+    if (sl) {
+      sfx.pop();
+      setPieces((ps) => ps.map((p) => (p.id === piece.id ? { ...p, x: sl.x, y: sl.y, slot: sl.id } : p)));
+    }
+    setTarget(null);
+  };
+
+  const autoLayout = () => {
+    sfx.click();
+    const used = new Set();
+    setPieces((ps) =>
+      ps.map((p) => {
+        const sl = slots.find((s) => s.letter === p.letter && !used.has(s.id));
+        used.add(sl.id);
+        return { ...p, x: sl.x, y: sl.y, slot: sl.id, rot: 0 };
+      })
+    );
+  };
+
+  return (
+    <div className="screen fade-in">
+      <p className="tag">TASK 03 · LAYOUT</p>
+      <h1 className="title">Fix my layout, please 🥺</h1>
+      <p className="subtitle">Drag the letters into the frame — they snap like in Figma</p>
+      <div ref={boxRef} className={`artboard ${solved ? "solved" : ""}`}>
+        <span className="artboard-label">Frame · Message</span>
+        {slots.map((sl) => (
+          <div
+            key={sl.id}
+            className={`slot ${target === sl.id ? "target" : ""}`}
+            style={{ left: sl.x, top: sl.y, width: size, height: size }}
+          />
+        ))}
+        {target !== null && (() => {
+          const sl = slots.find((s) => s.id === target);
+          return (
+            <>
+              <div className="guide guide-v" style={{ left: sl.x + size / 2 }} />
+              <div className="guide guide-h" style={{ top: sl.y + size / 2 }} />
+            </>
+          );
+        })()}
+        {pieces.map((p) => (
+          <div
+            key={p.id}
+            className={`piece ${p.slot !== null ? "placed" : ""} ${dragging === p.id ? "dragging" : ""}`}
+            style={{
+              width: size,
+              height: size,
+              fontSize: size * 0.55,
+              transform: `translate(${p.x}px, ${p.y}px) rotate(${p.rot}deg)`,
+            }}
+            onPointerDown={(e) => onDown(e, p)}
+            onPointerMove={(e) => onMove(e, p)}
+            onPointerUp={() => onUp(p)}
+            onPointerCancel={() => onUp(p)}
+          >
+            {p.letter}
+          </div>
+        ))}
+        {solved && <div className="solved-heart pop-in">❤️</div>}
+      </div>
+      {solved ? (
+        <div className="pop-in won-box">
+          <p className="subtitle">Pixel perfect — just like you ✨</p>
+          <button className="btn btn-yes" onClick={onDone}>
+            Next task →
+          </button>
+        </div>
+      ) : (
+        <button className="btn btn-ghost" onClick={autoLayout}>
+          ⚡ Use Auto Layout
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Step: Letter (pick a typeface, tap to reveal) ---------------- */
+function Letter({ font, onFont, onDone }) {
   const [shown, setShown] = useState(1);
   const finished = shown >= LETTER_LINES.length;
   const next = () => {
@@ -321,9 +639,36 @@ function Letter({ onDone }) {
   };
   return (
     <div className="screen fade-in">
-      <div className="card letter-card" onClick={next} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && next()}>
+      <p className="tag">TASK 04 · TYPOGRAPHY</p>
+      <p className="subtitle">Choose the typeface for my letter to you</p>
+      <div className="font-chips">
+        {FONTS.map((f) => (
+          <button
+            key={f.id}
+            className={`font-chip ${font.id === f.id ? "picked" : ""}`}
+            style={{ fontFamily: `"${f.family}"` }}
+            onClick={() => {
+              sfx.pop();
+              onFont(f);
+            }}
+          >
+            Aa <small>{f.vibe}</small>
+          </button>
+        ))}
+      </div>
+      <div
+        className="card letter-card"
+        onClick={next}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && next()}
+      >
         {LETTER_LINES.slice(0, shown).map((l, i) => (
-          <p key={i} className={`letter-line ${i === 0 ? "greeting" : ""}`}>
+          <p
+            key={i}
+            className={`letter-line ${i === 0 ? "greeting" : ""}`}
+            style={{ fontFamily: `"${font.family}", cursive` }}
+          >
             {l}
           </p>
         ))}
@@ -344,7 +689,7 @@ function Letter({ onDone }) {
   );
 }
 
-/* ---------------- Step 4: Love meter (hold to fill) ---------------- */
+/* ---------------- Step: Love meter (hold to fill) ---------------- */
 function LoveMeter({ onDone }) {
   const [level, setLevel] = useState(0);
   const [holding, setHolding] = useState(false);
@@ -378,6 +723,7 @@ function LoveMeter({ onDone }) {
 
   return (
     <div className="screen fade-in">
+      <p className="tag">TASK 05 · MEASUREMENTS</p>
       <h1 className="title">How much do I love you?</h1>
       <p className="subtitle">Press and hold the heart to find out</p>
       <div className="meter">
@@ -401,9 +747,9 @@ function LoveMeter({ onDone }) {
         </button>
       ) : (
         <div className="pop-in won-box">
-          <p className="subtitle">The meter broke — my love for you has no limit, {HER_NAME} ❤️</p>
+          <p className="subtitle">The meter broke — my love for you has no max-width, {HER_NAME} ❤️</p>
           <button className="btn btn-yes" onClick={onDone}>
-            One more thing… 💍
+            Next task →
           </button>
         </div>
       )}
@@ -411,7 +757,138 @@ function LoveMeter({ onDone }) {
   );
 }
 
-/* ---------------- Step 5: The question ---------------- */
+/* ---------------- Step: Sketch something ---------------- */
+function Sketch({ palette, onDone }) {
+  const canvasRef = useRef(null);
+  const drawing = useRef(false);
+  const last = useRef(null);
+  const [color, setColor] = useState(palette.primary);
+  const [brush, setBrush] = useState(6);
+  const [hasInk, setHasInk] = useState(false);
+
+  const colors = [palette.primary, palette.accent, "#222222", "#ffb300", "#29b6f6", "#43a047"];
+
+  const fillWhite = () => {
+    const c = canvasRef.current;
+    const ctx = c.getContext("2d");
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.restore();
+  };
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    const dpr = window.devicePixelRatio || 1;
+    const r = c.getBoundingClientRect();
+    c.width = r.width * dpr;
+    c.height = r.height * dpr;
+    const ctx = c.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    fillWhite();
+  }, []);
+
+  const pos = (e) => {
+    const r = canvasRef.current.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  const stroke = (from, to) => {
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.strokeStyle = color;
+    ctx.lineWidth = brush;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  };
+
+  const down = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drawing.current = true;
+    const p = pos(e);
+    last.current = p;
+    stroke(p, { x: p.x + 0.1, y: p.y + 0.1 });
+    setHasInk(true);
+  };
+  const move = (e) => {
+    if (!drawing.current) return;
+    const p = pos(e);
+    stroke(last.current, p);
+    last.current = p;
+  };
+  const up = () => {
+    drawing.current = false;
+  };
+
+  return (
+    <div className="screen fade-in">
+      <p className="tag">TASK 06 · ILLUSTRATION</p>
+      <h1 className="title">Sketch something for me ✏️</h1>
+      <p className="subtitle">A heart, us two, a doodle — it goes on our poster at the end</p>
+      <div className="sketch-wrap card">
+        <div className="toolbar">
+          {colors.map((c) => (
+            <button
+              key={c}
+              className={`color-dot ${color === c ? "picked" : ""}`}
+              style={{ background: c }}
+              onClick={() => setColor(c)}
+              aria-label={`Colour ${c}`}
+            />
+          ))}
+          <button className={`tool ${color === "#ffffff" ? "picked" : ""}`} onClick={() => setColor("#ffffff")}>
+            🧽
+          </button>
+          <span className="sep" />
+          {[3, 6, 12].map((b) => (
+            <button key={b} className={`tool ${brush === b ? "picked" : ""}`} onClick={() => setBrush(b)} aria-label={`Brush ${b}`}>
+              <span className="brush-dot" style={{ width: b + 2, height: b + 2 }} />
+            </button>
+          ))}
+          <span className="sep" />
+          <button
+            className="tool"
+            onClick={() => {
+              fillWhite();
+              setHasInk(false);
+            }}
+          >
+            🗑️
+          </button>
+        </div>
+        <canvas
+          ref={canvasRef}
+          className="sketch-canvas"
+          onPointerDown={down}
+          onPointerMove={move}
+          onPointerUp={up}
+          onPointerCancel={up}
+        />
+      </div>
+      <div className="row">
+        <button className="btn btn-ghost" onClick={() => onDone(null)}>
+          Skip
+        </button>
+        <button
+          className="btn btn-yes"
+          disabled={!hasInk}
+          onClick={() => {
+            sfx.win();
+            onDone(canvasRef.current.toDataURL("image/png"));
+          }}
+        >
+          Export artwork 📤
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Step: The question ---------------- */
 function Question({ onDone }) {
   const [noCount, setNoCount] = useState(0);
   const [noPos, setNoPos] = useState(null);
@@ -429,18 +906,14 @@ function Question({ onDone }) {
     const pad = 16;
     setNoPos({
       left: pad + Math.random() * (window.innerWidth - w - pad * 2),
-      top: pad + Math.random() * (window.innerHeight - h - pad * 2),
+      top: 60 + Math.random() * (window.innerHeight - h - 60 - pad),
     });
     setNoCount((c) => c + 1);
   };
 
-  const sayYes = () => {
-    sfx.win();
-    onDone(noCount);
-  };
-
   return (
     <div className="screen fade-in">
+      <p className="tag">FINAL APPROVAL</p>
       <div className="big-emoji bounce">{face}</div>
       <h1 className="title">{HER_NAME}, will you be mine? 💘</h1>
       {noCount > 0 && (
@@ -448,12 +921,19 @@ function Question({ onDone }) {
           {noCount < 5
             ? "Pleaseee 🥺"
             : noCount < 10
-            ? "I'm not giving up!"
-            : "The Yes button is getting bigger for a reason 😏"}
+            ? "Client is not accepting this revision 😤"
+            : "The Yes button is getting bigger — that's visual hierarchy 😏"}
         </p>
       )}
       <div className="buttons">
-        <button className="btn btn-yes" style={{ transform: `scale(${yesScale})` }} onClick={sayYes}>
+        <button
+          className="btn btn-yes"
+          style={{ transform: `scale(${yesScale})` }}
+          onClick={() => {
+            sfx.win();
+            onDone(noCount);
+          }}
+        >
           Yes 💖
         </button>
         <button
@@ -473,7 +953,7 @@ function Question({ onDone }) {
   );
 }
 
-/* ---------------- Step 6: Plan our date ---------------- */
+/* ---------------- Step: Plan our date ---------------- */
 function DatePlanner({ onDone }) {
   const [picked, setPicked] = useState([]);
   const toggle = (id) => {
@@ -483,8 +963,8 @@ function DatePlanner({ onDone }) {
   return (
     <div className="screen fade-in">
       <Burst />
-      <h1 className="title">Yayyy!! 🥳</h1>
-      <p className="subtitle">Now let's plan our first date — pick as many as you like!</p>
+      <h1 className="title">Yayyy!! Approved! 🥳</h1>
+      <p className="subtitle">Now let's moodboard our first date — pick as many as you like</p>
       <div className="date-grid">
         {DATE_IDEAS.map((d) => (
           <button key={d.id} className={`date-chip ${picked.includes(d.id) ? "picked" : ""}`} onClick={() => toggle(d.id)}>
@@ -507,7 +987,120 @@ function DatePlanner({ onDone }) {
   );
 }
 
-/* ---------------- Step 7: Celebration ---------------- */
+/* ---------------- Poster (rendered to a canvas so she can download it) ---------------- */
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function wrapLines(ctx, text, maxWidth) {
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+async function makePoster({ palette, font, sketch, dates }) {
+  const W = 1080;
+  const H = 1350;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext("2d");
+  try {
+    await document.fonts.load(`100px "${font.family}"`);
+    await document.fonts.load(`600 40px "Poppins"`);
+  } catch {
+    // fall back to whatever font is available
+  }
+
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, palette.bg1);
+  g.addColorStop(1, palette.bg2);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // decorative blobs
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = palette.accent;
+  ctx.beginPath();
+  ctx.arc(120, 160, 180, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(W - 80, H - 200, 240, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = palette.ink;
+  ctx.font = `600 28px "Poppins", sans-serif`;
+  ctx.fillText("A LOVE STORY · DESIGNED TOGETHER", W / 2, 110);
+
+  ctx.fillStyle = palette.primary;
+  ctx.font = `100px "${font.family}", cursive`;
+  ctx.fillText(`${HER_NAME} ❤ ${YOUR_FIRST}`, W / 2, 240);
+
+  // artwork card
+  const cx = 140;
+  const cy = 300;
+  const cw = W - 280;
+  const ch = 600;
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.15)";
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 16;
+  ctx.beginPath();
+  ctx.roundRect(cx, cy, cw, ch, 36);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+
+  if (sketch) {
+    const img = await loadImage(sketch);
+    const scale = Math.min((cw - 60) / img.width, (ch - 60) / img.height);
+    const iw = img.width * scale;
+    const ih = img.height * scale;
+    ctx.drawImage(img, cx + (cw - iw) / 2, cy + (ch - ih) / 2, iw, ih);
+  } else {
+    ctx.font = `260px serif`;
+    ctx.textBaseline = "middle";
+    ctx.fillText("💖", W / 2, cy + ch / 2);
+    ctx.textBaseline = "alphabetic";
+  }
+
+  ctx.fillStyle = palette.ink;
+  ctx.font = `600 30px "Poppins", sans-serif`;
+  ctx.fillText(`Artwork by ${HER_FULL_NAME}`, W / 2, cy + ch + 60);
+
+  ctx.font = `44px "${font.family}", cursive`;
+  ctx.fillStyle = palette.primary;
+  const plans = dates.map((d) => d.label).join(" · ");
+  wrapLines(ctx, `Up next: ${plans}`, W - 200)
+    .slice(0, 3)
+    .forEach((line, i) => ctx.fillText(line, W / 2, cy + ch + 140 + i * 56));
+
+  const today = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+  ctx.fillStyle = palette.ink;
+  ctx.font = `500 26px "Poppins", sans-serif`;
+  ctx.fillText(`She said YES · ${today}`, W / 2, H - 70);
+
+  return c.toDataURL("image/png");
+}
+
+/* ---------------- Step: Celebration ---------------- */
 function FlipCard({ front, back }) {
   const [flipped, setFlipped] = useState(false);
   return (
@@ -526,14 +1119,24 @@ function FlipCard({ front, back }) {
   );
 }
 
-function Celebration({ noCount, dates, onReplay }) {
+function Celebration({ noCount, dates, palette, font, sketch, onReplay }) {
   const [hugs, setHugs] = useState(0);
+  const [poster, setPoster] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    makePoster({ palette, font, sketch, dates }).then((url) => alive && setPoster(url));
+    return () => {
+      alive = false;
+    };
+  }, [palette, font, sketch, dates]);
+
   return (
-    <div className="screen fade-in scrollable">
+    <div className="screen fade-in">
       <Burst />
       <div className="big-emoji heartbeat">💖</div>
       <h1 className="title">
-        {HER_NAME} ❤️ {YOUR_NAME.split(" ")[0]}
+        {HER_NAME} ❤️ {YOUR_FIRST}
       </h1>
       <p className="subtitle">
         You just made me the happiest person alive!
@@ -541,14 +1144,18 @@ function Celebration({ noCount, dates, onReplay }) {
       </p>
 
       <div className="card">
-        <h2 className="card-title">Our date plans 📅</h2>
-        <div className="plan-list">
-          {dates.map((d) => (
-            <span key={d.id} className="plan-pill">
-              {d.emoji} {d.label}
-            </span>
-          ))}
-        </div>
+        <h2 className="card-title">Our poster 🖼️</h2>
+        <p className="hint">Designed with your palette, your font and your artwork</p>
+        {poster ? (
+          <>
+            <img className="poster" src={poster} alt="Our love poster" />
+            <a className="btn btn-yes download" href={poster} download={`${HER_NAME}-x-${YOUR_FIRST}.png`}>
+              Download poster ⬇️
+            </a>
+          </>
+        ) : (
+          <p className="subtitle">Rendering… 🎨</p>
+        )}
       </div>
 
       <div className="card">
@@ -573,7 +1180,9 @@ function Celebration({ noCount, dates, onReplay }) {
           🤗
         </button>
         <p className="subtitle">
-          {hugs === 0 ? "Tap to hug me!" : `${hugs} hug${hugs > 1 ? "s" : ""} received${hugs >= 10 ? " — I feel so loved 🥹" : ""}`}
+          {hugs === 0
+            ? "Tap to hug me!"
+            : `${hugs} hug${hugs > 1 ? "s" : ""} received${hugs >= 10 ? " — I feel so loved 🥹" : ""}`}
         </p>
       </div>
 
@@ -586,36 +1195,61 @@ function Celebration({ noCount, dates, onReplay }) {
 }
 
 /* ---------------- App ---------------- */
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 10;
 
 export default function App() {
   const [step, setStep] = useState(0);
+  const [palette, setPalette] = useState(PALETTES[0]);
+  const [font, setFont] = useState(FONTS[0]);
+  const [sketch, setSketch] = useState(null);
   const [noCount, setNoCount] = useState(0);
   const [dates, setDates] = useState([]);
   const [muted, setMuted] = useState(false);
 
-  const next = useCallback(() => setStep((s) => s + 1), []);
+  const next = useCallback(() => {
+    setStep((s) => s + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
-  const toggleSound = (e) => {
-    e.stopPropagation();
+  const toggleSound = () => {
     soundOn = muted;
     setMuted(!muted);
   };
 
+  const themeVars = {
+    "--bg1": palette.bg1,
+    "--bg2": palette.bg2,
+    "--primary": palette.primary,
+    "--accent": palette.accent,
+    "--ink": palette.ink,
+    "--soft": palette.soft,
+    "--card": palette.card,
+    "--display": `"${font.family}"`,
+  };
+
   return (
-    <main className="app">
+    <main className="app" style={themeVars}>
       <FloatingHearts />
       <TapHearts />
-      <Progress step={step} total={TOTAL_STEPS} />
-      <button className="sound-btn" onClick={toggleSound} aria-label={muted ? "Unmute" : "Mute"}>
-        {muted ? "🔇" : "🔊"}
-      </button>
+      <DesignCursors />
+      <TopBar step={step} total={TOTAL_STEPS} muted={muted} onToggleSound={toggleSound} />
 
       {step === 0 && <Envelope onDone={next} />}
-      {step === 1 && <CatchHearts onDone={next} />}
-      {step === 2 && <Letter onDone={next} />}
-      {step === 3 && <LoveMeter onDone={next} />}
-      {step === 4 && (
+      {step === 1 && <PalettePicker palette={palette} onPick={setPalette} onDone={next} />}
+      {step === 2 && <CatchHearts onDone={next} />}
+      {step === 3 && <LayoutPuzzle onDone={next} />}
+      {step === 4 && <Letter font={font} onFont={setFont} onDone={next} />}
+      {step === 5 && <LoveMeter onDone={next} />}
+      {step === 6 && (
+        <Sketch
+          palette={palette}
+          onDone={(img) => {
+            setSketch(img);
+            next();
+          }}
+        />
+      )}
+      {step === 7 && (
         <Question
           onDone={(n) => {
             setNoCount(n);
@@ -623,7 +1257,7 @@ export default function App() {
           }}
         />
       )}
-      {step === 5 && (
+      {step === 8 && (
         <DatePlanner
           onDone={(d) => {
             setDates(d);
@@ -631,14 +1265,18 @@ export default function App() {
           }}
         />
       )}
-      {step === 6 && (
+      {step === 9 && (
         <Celebration
           noCount={noCount}
           dates={dates}
+          palette={palette}
+          font={font}
+          sketch={sketch}
           onReplay={() => {
             setStep(0);
             setNoCount(0);
             setDates([]);
+            setSketch(null);
           }}
         />
       )}
