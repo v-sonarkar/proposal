@@ -1495,3 +1495,103 @@ body {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ---------- Draw / Upload tabs ---------- */
+.mode-tabs {
+  display: inline-flex;
+  background: #1e1e1e;
+  padding: 4px;
+  border-radius: 999px;
+  gap: 4px;
+}
+
+.mode-tab {
+  border: none;
+  background: transparent;
+  color: #ddd;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.mode-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.sketch-wrap.is-hidden {
+  display: none;
+}
+
+.upload-wrap {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dropzone {
+  width: 100%;
+  min-height: clamp(220px, 40vh, 380px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2.5px dashed var(--accent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--soft) 60%, transparent);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.dropzone.over {
+  border-color: var(--primary);
+  background: var(--soft);
+  transform: scale(1.01);
+}
+
+.dropzone-icon {
+  font-size: 3rem;
+}
+
+.hint-static {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.upload-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-preview img {
+  max-width: 100%;
+  max-height: clamp(220px, 45vh, 440px);
+  border-radius: 12px;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.upload-error {
+  color: #d32f2f;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 599px) {
+  .mode-tab {
+    font-size: 0.85rem;
+    padding: 8px 14px;
+  }
+}

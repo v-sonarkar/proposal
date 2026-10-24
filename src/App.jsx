@@ -974,6 +974,41 @@ function Sketch({ palette, onDone }) {
   const [color, setColor] = useState(palette.primary);
   const [brush, setBrush] = useState(6);
   const [hasInk, setHasInk] = useState(false);
+  const [mode, setMode] = useState("draw"); // "draw" | "upload"
+  const [upload, setUpload] = useState(null);
+  const [uploadError, setUploadError] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef(null);
+
+  // Read the chosen image and shrink very large files so the poster stays fast
+  const handleFile = (file) => {
+    setUploadError("");
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError("That doesn't look like an image — try PNG, JPG, WEBP or SVG 🙏");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const img = await loadImage(reader.result);
+        const max = 1600;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale) || 800;
+        c.height = Math.round(img.height * scale) || 800;
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        setUpload(c.toDataURL("image/png"));
+        sfx.pop();
+      } catch {
+        setUploadError("Couldn't open that image — try another one 🙏");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const colors = [palette.primary, palette.accent, "#222222", "#ffb300", "#29b6f6", "#43a047"];
 
@@ -993,6 +1028,7 @@ function Sketch({ palette, onDone }) {
     const fit = () => {
       const dpr = window.devicePixelRatio || 1;
       const r = c.getBoundingClientRect();
+      if (!r.width || !r.height) return; // hidden while the Upload tab is open — keep the drawing
       const w = Math.round(r.width * dpr);
       const h = Math.round(r.height * dpr);
       if (w === c.width && h === c.height) return;
@@ -1056,9 +1092,82 @@ function Sketch({ palette, onDone }) {
   return (
     <div className="screen fade-in">
       <p className="tag">TASK 08 · ILLUSTRATION</p>
-      <h1 className="title">Sketch something for me ✏️</h1>
-      <p className="subtitle">A heart, us two, a doodle — it goes on our poster at the end</p>
-      <div className="sketch-wrap card">
+      <h1 className="title">Show me your art ✏️</h1>
+      <p className="subtitle">Draw something here, or upload one of your designs — it goes on our poster at the end</p>
+      <div className="mode-tabs" role="tablist">
+        <button
+          role="tab"
+          aria-selected={mode === "draw"}
+          className={`mode-tab ${mode === "draw" ? "active" : ""}`}
+          onClick={() => {
+            sfx.click();
+            setMode("draw");
+          }}
+        >
+          ✏️ Draw
+        </button>
+        <button
+          role="tab"
+          aria-selected={mode === "upload"}
+          className={`mode-tab ${mode === "upload" ? "active" : ""}`}
+          onClick={() => {
+            sfx.click();
+            setMode("upload");
+          }}
+        >
+          📁 Upload design
+        </button>
+      </div>
+
+      {mode === "upload" && (
+        <div className="card upload-wrap">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              handleFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          {upload ? (
+            <div className="upload-preview">
+              <img src={upload} alt="Your uploaded design" />
+              <div className="row">
+                <button className="btn btn-ghost" onClick={() => fileRef.current.click()}>
+                  🔄 Replace
+                </button>
+                <button className="btn btn-ghost" onClick={() => setUpload(null)}>
+                  🗑️ Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className={`dropzone ${dragOver ? "over" : ""}`}
+              onClick={() => fileRef.current.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                handleFile(e.dataTransfer.files?.[0]);
+              }}
+            >
+              <span className="dropzone-icon">🖼️</span>
+              <strong>Tap to choose a design</strong>
+              <span className="hint-static">or drag &amp; drop it here · PNG, JPG, WEBP, SVG</span>
+            </button>
+          )}
+          {uploadError && <p className="upload-error">{uploadError}</p>}
+        </div>
+      )}
+
+      <div className={`sketch-wrap card ${mode === "draw" ? "" : "is-hidden"}`}>
         <div className="toolbar">
           {colors.map((c) => (
             <button
@@ -1104,13 +1213,13 @@ function Sketch({ palette, onDone }) {
         </button>
         <button
           className="btn btn-yes"
-          disabled={!hasInk}
+          disabled={mode === "draw" ? !hasInk : !upload}
           onClick={() => {
             sfx.win();
-            onDone(canvasRef.current.toDataURL("image/png"));
+            onDone(mode === "draw" ? canvasRef.current.toDataURL("image/png") : upload);
           }}
         >
-          Export artwork 📤
+          {mode === "draw" ? "Export artwork 📤" : "Use this design 📤"}
         </button>
       </div>
     </div>
@@ -1459,7 +1568,7 @@ async function makePoster({ palette, font, sketch, dates }) {
 
   ctx.fillStyle = palette.ink;
   ctx.font = `600 30px "Poppins", sans-serif`;
-  ctx.fillText(`Artwork by ${HER_FULL_NAME}`, W / 2, cy + ch + 60);
+  ctx.fillText(`Design by ${HER_FULL_NAME}`, W / 2, cy + ch + 60);
 
   ctx.font = `44px "${font.family}", cursive`;
   ctx.fillStyle = palette.primary;
