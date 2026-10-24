@@ -97,6 +97,7 @@ const FONTS = [
 
 const PUZZLE_WORD = ["I", " ", "L", "O", "V", "E", " ", "Y", "O", "U"];
 const CATCH_GOAL = 10;
+const BROKEN_HEART_PENALTY = 2; // points lost for tapping a 💔
 
 /* ---------------- Sound (Web Audio, no files needed) ---------------- */
 let audioCtx = null;
@@ -380,8 +381,16 @@ function CatchHearts({ onDone }) {
   const [score, setScore] = useState(0);
   const [drops, setDrops] = useState([]);
   const [shake, setShake] = useState(false);
+  const [popups, setPopups] = useState([]);
   const won = score >= CATCH_GOAL;
   const idRef = useRef(0);
+
+  // floating "+1" / "−2" text where the heart was tapped
+  const showPopup = (x, y, text, bad) => {
+    const id = idRef.current++;
+    setPopups((p) => [...p, { id, x, y, text, bad }]);
+    setTimeout(() => setPopups((p) => p.filter((q) => q.id !== id)), 900);
+  };
 
   useEffect(() => {
     if (won) return;
@@ -410,16 +419,19 @@ function CatchHearts({ onDone }) {
     }
   }, [won]);
 
-  const catchDrop = (drop) => {
+  const catchDrop = (drop, e) => {
+    if (won) return;
     setDrops((d) => d.filter((x) => x.id !== drop.id));
     if (drop.bad) {
       sfx.bad();
-      setScore((s) => Math.max(0, s - 1));
+      setScore((s) => Math.max(0, s - BROKEN_HEART_PENALTY));
+      showPopup(e.clientX, e.clientY, `−${BROKEN_HEART_PENALTY} 💔`, true);
       setShake(true);
-      setTimeout(() => setShake(false), 400);
+      setTimeout(() => setShake(false), 500);
     } else {
       sfx.pop();
       setScore((s) => s + 1);
+      showPopup(e.clientX, e.clientY, "+1 ❤️", false);
     }
   };
 
@@ -427,8 +439,10 @@ function CatchHearts({ onDone }) {
     <div className="screen fade-in">
       <p className="tag">TASK 02 · WARM UP</p>
       <h1 className="title">Catch my heart, {HER_NAME}! 💘</h1>
-      <p className="subtitle">Tap {CATCH_GOAL} falling hearts — avoid the 💔</p>
-      <div className={`score-card ${shake ? "shake" : ""}`}>
+      <p className="subtitle">
+        Tap {CATCH_GOAL} falling hearts — each 💔 takes away {BROKEN_HEART_PENALTY} points!
+      </p>
+      <div className={`score-card ${shake ? "shake penalty" : ""}`}>
         <div className="score-bar">
           <div className="score-fill" style={{ width: `${Math.min(score / CATCH_GOAL, 1) * 100}%` }} />
         </div>
@@ -450,12 +464,19 @@ function CatchHearts({ onDone }) {
             key={d.id}
             className="drop"
             style={{ left: `${d.left}%`, fontSize: d.size, animationDuration: `${d.duration}s` }}
-            onPointerDown={() => catchDrop(d)}
+            onPointerDown={(e) => catchDrop(d, e)}
             onAnimationEnd={() => setDrops((x) => x.filter((y) => y.id !== d.id))}
             aria-label={d.bad ? "Broken heart" : "Heart"}
           >
             {d.emoji}
           </button>
+        ))}
+      </div>
+      <div className="score-popups" aria-hidden="true">
+        {popups.map((p) => (
+          <span key={p.id} className={`score-popup ${p.bad ? "bad" : ""}`} style={{ left: p.x, top: p.y }}>
+            {p.text}
+          </span>
         ))}
       </div>
     </div>
@@ -589,21 +610,9 @@ function LayoutPuzzle({ onDone }) {
     setTarget(null);
   };
 
-  const autoLayout = () => {
-    sfx.click();
-    const used = new Set();
-    setPieces((ps) =>
-      ps.map((p) => {
-        const sl = slots.find((s) => s.letter === p.letter && !used.has(s.id));
-        used.add(sl.id);
-        return { ...p, x: sl.x, y: sl.y, slot: sl.id, rot: 0 };
-      })
-    );
-  };
-
   return (
     <div className="screen fade-in">
-      <p className="tag">TASK 03 · LAYOUT</p>
+      <p className="tag">TASK 04 · LAYOUT</p>
       <h1 className="title">Fix my layout, please 🥺</h1>
       <p className="subtitle">Drag the letters into the frame — they snap like in Figma</p>
       <div ref={boxRef} className={`artboard ${solved ? "solved" : ""}`}>
@@ -644,17 +653,185 @@ function LayoutPuzzle({ onDone }) {
         ))}
         {solved && <div className="solved-heart pop-in">❤️</div>}
       </div>
-      {solved ? (
+      {solved && (
         <div className="pop-in won-box">
           <p className="subtitle">Pixel perfect — just like you ✨</p>
           <button className="btn btn-yes" onClick={onDone}>
             Next task →
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Step: Spot the shade (colour-eye test) ---------------- */
+const SHADE_ROUNDS = 6;
+
+function SpotTheShade({ onDone }) {
+  const [round, setRound] = useState(1);
+  const [wrong, setWrong] = useState(null);
+  const [misses, setMisses] = useState(0);
+  const done = round > SHADE_ROUNDS;
+
+  const puzzle = useMemo(() => {
+    const n = Math.min(round + 2, 7);
+    const hue = Math.floor(Math.random() * 360);
+    const sat = Math.round(55 + Math.random() * 25);
+    const light = Math.round(45 + Math.random() * 12);
+    const diff = Math.max(4, Math.round(20 - round * 2.8));
+    return {
+      n,
+      diff,
+      odd: Math.floor(Math.random() * n * n),
+      base: `hsl(${hue} ${sat}% ${light}%)`,
+      oddColor: `hsl(${hue} ${sat}% ${light + diff}%)`,
+    };
+  }, [round]);
+
+  useEffect(() => {
+    if (done) sfx.win();
+  }, [done]);
+
+  const pick = (i) => {
+    if (done) return;
+    if (i === puzzle.odd) {
+      sfx.pop();
+      setWrong(null);
+      setRound((r) => r + 1);
+    } else {
+      sfx.bad();
+      setMisses((m) => m + 1);
+      setWrong(i);
+      setTimeout(() => setWrong(null), 450);
+    }
+  };
+
+  return (
+    <div className="screen fade-in">
+      <p className="tag">TASK 03 · COLOUR EYE</p>
+      <h1 className="title">Spot the different shade 👀</h1>
+      <p className="subtitle">One square is a tiny bit lighter. A designer's eye can find it!</p>
+      {!done ? (
+        <>
+          <div className="shade-meta">
+            <span>
+              Round {round}/{SHADE_ROUNDS}
+            </span>
+            <span>Δ lightness {puzzle.diff}%</span>
+            <span>Misses {misses}</span>
+          </div>
+          <div className="shade-grid" style={{ gridTemplateColumns: `repeat(${puzzle.n}, 1fr)` }}>
+            {Array.from({ length: puzzle.n * puzzle.n }, (_, i) => (
+              <button
+                key={`${round}-${i}`}
+                className={`shade-cell ${wrong === i ? "wrong" : ""}`}
+                style={{ background: i === puzzle.odd ? puzzle.oddColor : puzzle.base }}
+                onClick={() => pick(i)}
+                aria-label={`Square ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
       ) : (
-        <button className="btn btn-ghost" onClick={autoLayout}>
-          ⚡ Use Auto Layout
-        </button>
+        <div className="pop-in won-box">
+          <div className="big-emoji">🏆</div>
+          <p className="subtitle">
+            Your eye for colour is unreal{misses === 0 ? " — zero misses!" : ` (only ${misses} miss${misses > 1 ? "es" : ""})`} ✨
+          </p>
+          <p className="subtitle">But my eyes only ever spot you 🥰</p>
+          <button className="btn btn-yes" onClick={onDone}>
+            Next task →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Step: Memory match ---------------- */
+const MEMORY_ICONS = ["🎨", "✏️", "📐", "🖌️", "💖", "🌸"];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function MemoryMatch({ onDone }) {
+  const [cards] = useState(() => shuffle([...MEMORY_ICONS, ...MEMORY_ICONS]).map((icon, id) => ({ id, icon })));
+  const [open, setOpen] = useState([]);
+  const [matched, setMatched] = useState([]);
+  const [moves, setMoves] = useState(0);
+  const done = matched.length === cards.length;
+
+  useEffect(() => {
+    if (done) sfx.win();
+  }, [done]);
+
+  const flip = (id) => {
+    if (open.length === 2 || open.includes(id) || matched.includes(id)) return;
+    sfx.click();
+    const next = [...open, id];
+    setOpen(next);
+    if (next.length < 2) return;
+    setMoves((m) => m + 1);
+    const [a, b] = next.map((i) => cards[i]);
+    if (a.icon === b.icon) {
+      setTimeout(() => {
+        sfx.pop();
+        setMatched((m) => [...m, a.id, b.id]);
+        setOpen([]);
+      }, 400);
+    } else {
+      setTimeout(() => {
+        sfx.bad();
+        setOpen([]);
+      }, 850);
+    }
+  };
+
+  return (
+    <div className="screen fade-in">
+      <p className="tag">TASK 05 · MEMORY</p>
+      <h1 className="title">Match the design tools 🧠</h1>
+      <p className="subtitle">Flip two cards at a time and find all {MEMORY_ICONS.length} pairs</p>
+      <div className="shade-meta">
+        <span>Moves {moves}</span>
+        <span>
+          Pairs {matched.length / 2}/{MEMORY_ICONS.length}
+        </span>
+      </div>
+      <div className="memory-grid">
+        {cards.map((c) => {
+          const faceUp = open.includes(c.id) || matched.includes(c.id);
+          return (
+            <button
+              key={c.id}
+              className={`mem-card ${faceUp ? "up" : ""} ${matched.includes(c.id) ? "matched" : ""}`}
+              onClick={() => flip(c.id)}
+              aria-label={faceUp ? c.icon : "Hidden card"}
+            >
+              <div className="mem-inner">
+                <div className="mem-back">◆</div>
+                <div className="mem-front">{c.icon}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {done && (
+        <div className="pop-in won-box">
+          <p className="subtitle">
+            All matched in {moves} moves! We're a perfect match too 💞
+          </p>
+          <button className="btn btn-yes" onClick={onDone}>
+            Next task →
+          </button>
+        </div>
       )}
     </div>
   );
@@ -671,7 +848,7 @@ function Letter({ font, onFont, onDone }) {
   };
   return (
     <div className="screen fade-in">
-      <p className="tag">TASK 04 · TYPOGRAPHY</p>
+      <p className="tag">TASK 06 · TYPOGRAPHY</p>
       <p className="subtitle">Choose the typeface for my letter to you</p>
       <div className="font-chips">
         {FONTS.map((f) => (
@@ -755,7 +932,7 @@ function LoveMeter({ onDone }) {
 
   return (
     <div className="screen fade-in">
-      <p className="tag">TASK 05 · MEASUREMENTS</p>
+      <p className="tag">TASK 07 · MEASUREMENTS</p>
       <h1 className="title">How much do I love you?</h1>
       <p className="subtitle">Press and hold the heart to find out</p>
       <div className="meter">
@@ -878,7 +1055,7 @@ function Sketch({ palette, onDone }) {
 
   return (
     <div className="screen fade-in">
-      <p className="tag">TASK 06 · ILLUSTRATION</p>
+      <p className="tag">TASK 08 · ILLUSTRATION</p>
       <h1 className="title">Sketch something for me ✏️</h1>
       <p className="subtitle">A heart, us two, a doodle — it goes on our poster at the end</p>
       <div className="sketch-wrap card">
@@ -936,6 +1113,141 @@ function Sketch({ palette, onDone }) {
           Export artwork 📤
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- Step: Scratch card ---------------- */
+function ScratchCard({ palette, onDone }) {
+  const wrapRef = useRef(null);
+  const canvasRef = useRef(null);
+  const scratching = useRef(false);
+  const last = useRef(null);
+  const revealedRef = useRef(false);
+  const [revealed, setRevealed] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    const wrap = wrapRef.current;
+    const paintCover = () => {
+      if (revealedRef.current) return;
+      const dpr = window.devicePixelRatio || 1;
+      const r = wrap.getBoundingClientRect();
+      c.width = Math.round(r.width * dpr);
+      c.height = Math.round(r.height * dpr);
+      const ctx = c.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+      const g = ctx.createLinearGradient(0, 0, r.width, r.height);
+      g.addColorStop(0, palette.accent);
+      g.addColorStop(1, palette.primary);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, r.width, r.height);
+      // glitter
+      for (let i = 0; i < 120; i++) {
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(Math.random() * r.width, Math.random() * r.height, Math.random() * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `600 ${Math.max(18, Math.min(28, r.width / 16))}px Poppins, sans-serif`;
+      ctx.fillText("✨ Scratch here ✨", r.width / 2, r.height / 2);
+      setProgress(0);
+    };
+    paintCover();
+    const ro = new ResizeObserver(paintCover);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [palette]);
+
+  const pos = (e) => {
+    const r = canvasRef.current.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  const scratch = (from, to) => {
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 40;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  };
+
+  const measure = () => {
+    const c = canvasRef.current;
+    const data = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+    let clear = 0;
+    let total = 0;
+    for (let i = 3; i < data.length; i += 4 * 24) {
+      total++;
+      if (data[i] === 0) clear++;
+    }
+    const pct = clear / total;
+    setProgress(pct);
+    if (pct > 0.5 && !revealedRef.current) {
+      revealedRef.current = true;
+      setRevealed(true);
+      sfx.win();
+    }
+  };
+
+  const down = (e) => {
+    if (revealed) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    scratching.current = true;
+    last.current = pos(e);
+    scratch(last.current, { x: last.current.x + 0.1, y: last.current.y });
+  };
+  const move = (e) => {
+    if (!scratching.current) return;
+    const p = pos(e);
+    scratch(last.current, p);
+    last.current = p;
+    if (Math.random() < 0.15) tone(900 + Math.random() * 400, 0.03, "square", 0.03);
+  };
+  const up = () => {
+    if (!scratching.current) return;
+    scratching.current = false;
+    measure();
+  };
+
+  return (
+    <div className="screen fade-in">
+      <p className="tag">TASK 09 · SECRET FILE</p>
+      <h1 className="title">Scratch to reveal 🎟️</h1>
+      <p className="subtitle">There's a secret hidden under here…</p>
+      <div ref={wrapRef} className="scratch-wrap card">
+        <div className="scratch-message">
+          <div className="big-emoji">💍</div>
+          <p className="letter-line greeting">{HER_NAME},</p>
+          <p className="subtitle">
+            you're the most beautiful design I've ever seen — and I have one very important question for you…
+          </p>
+        </div>
+        <canvas
+          ref={canvasRef}
+          className={`scratch-canvas ${revealed ? "gone" : ""}`}
+          onPointerDown={down}
+          onPointerMove={move}
+          onPointerUp={up}
+          onPointerCancel={up}
+        />
+      </div>
+      {!revealed ? (
+        <p className="hint">Scratched {Math.round(progress * 100)}% — keep going!</p>
+      ) : (
+        <button className="btn btn-yes pop-in" onClick={onDone}>
+          Ask me 💘
+        </button>
+      )}
     </div>
   );
 }
@@ -1263,7 +1575,7 @@ function Celebration({ noCount, dates, palette, font, sketch, onReplay }) {
 }
 
 /* ---------------- App ---------------- */
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 13;
 
 export default function App() {
   const [step, setStep] = useState(0);
@@ -1305,10 +1617,12 @@ export default function App() {
       {step === 0 && <Envelope onDone={next} />}
       {step === 1 && <PalettePicker palette={palette} onPick={setPalette} onDone={next} />}
       {step === 2 && <CatchHearts onDone={next} />}
-      {step === 3 && <LayoutPuzzle onDone={next} />}
-      {step === 4 && <Letter font={font} onFont={setFont} onDone={next} />}
-      {step === 5 && <LoveMeter onDone={next} />}
-      {step === 6 && (
+      {step === 3 && <SpotTheShade onDone={next} />}
+      {step === 4 && <LayoutPuzzle onDone={next} />}
+      {step === 5 && <MemoryMatch onDone={next} />}
+      {step === 6 && <Letter font={font} onFont={setFont} onDone={next} />}
+      {step === 7 && <LoveMeter onDone={next} />}
+      {step === 8 && (
         <Sketch
           palette={palette}
           onDone={(img) => {
@@ -1317,7 +1631,8 @@ export default function App() {
           }}
         />
       )}
-      {step === 7 && (
+      {step === 9 && <ScratchCard palette={palette} onDone={next} />}
+      {step === 10 && (
         <Question
           onDone={(n) => {
             setNoCount(n);
@@ -1325,7 +1640,7 @@ export default function App() {
           }}
         />
       )}
-      {step === 8 && (
+      {step === 11 && (
         <DatePlanner
           onDone={(d) => {
             setDates(d);
@@ -1333,7 +1648,7 @@ export default function App() {
           }}
         />
       )}
-      {step === 9 && (
+      {step === 12 && (
         <Celebration
           noCount={noCount}
           dates={dates}
